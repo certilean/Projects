@@ -5,7 +5,7 @@
 import os
 import sys
 import random
-#also import a shitload of other things
+#also import other things
 
 
 quit = False
