@@ -315,25 +315,20 @@ def Search_Employee(Employee):
 
 def Day_Assign(date, day, victims):
     availabilities = {1: [], 2: [], 3: [], 4: []}
-    print(victims, 'victims')
     victims_increment = 0
     while victims_increment < len(victims):
-        print('Any employees?', Employees[victims[victims_increment]])
         who = victims[victims_increment]
         avail = Employees[who]['availability'].split(' ')
         organized_availability = dict()
         for a in avail:
             g = a.split(':')
-            print(g)
             try:
                 organized_availability[g[0]] = g[1].split(',')
             except:
-                print('O_A:', organized_availability)
                 break
             # print('Organized availability: ', organized_availability)
         if day in organized_availability:
             for n in organized_availability[day]:
-                print('n: ',n)
                 n = int(n)
                 availabilities[n].append(victims[victims_increment])
 
@@ -365,20 +360,18 @@ def Day_Assign(date, day, victims):
         except:
             pass
         victims_increment += 1
-    print('iterations documented: ',availabilities)
     return availabilities
 
-Formatting_Data_1 = dict()
-morn_swingers = []
+
+morn_swingers = dict()
 def Morning_Assignments(params, availables):
-    
-    morning_ppl = []
-    through_swing = []
-    #print(params) #the debugging journey took you here, you need to figure out why the first line in the next for loop is out of range
-    print(availables)
+    Formatting_Data_1 = dict()
     for day in params:
+        morning_ppl = []
+        through_swing = []
+        open_time = params[day]['open_time']
+        people_to_time = dict()
         openers = []
-        print(availables, 'availables^^')
         open_candidates = availables[day][1]
         opener_count = int(params[day]['open_ppl'])
         if len(open_candidates) > opener_count:
@@ -392,9 +385,9 @@ def Morning_Assignments(params, availables):
         go_for = len(open_candidates)
         while go_for > 0:
             opener_addition = open_candidates[go_for - 1]
-            openers.append([opener_addition, params[day]['open_time']])
+            openers.append(opener_addition)
+            people_to_time[opener_addition] = str(open_time)
             go_for -= 1
-        print(openers)
         # while opener_count > 0:
         #     random_selection = random.randint(0, (len(open_candidates)) - 1)
         #     opener_addition = open_candidates.pop(random_selection)
@@ -406,34 +399,65 @@ def Morning_Assignments(params, availables):
         #         print('Insufficient number of employees available to open on', day)
         #         opener_count = 0
         try:
-            morn_candidates = int(params[day][2])
-            for candidate in morn_candidates:
-                if candidate in openers:
-                    morn_candidates.remove(candidate)
+            if params[day]['excess_morn_data'] != []:
+                pass
+            else:
+                raise
+
             for m in params[day]['excess_morn_data']:
-                start = m[0]
+                morn_candidates = availables[day][2][:]
+                q = 0 # I don remember what i was trying to do but the morning candidates is broken and its broken at that while loop with q
+                p = len(morn_candidates)
+                while q < p:
+                    candidate = morn_candidates[q]
+                    if candidate in openers:
+                        del morn_candidates[q]
+                        q -= 1
+                    # try: 
+                    if candidate in morning_ppl:
+                        del morn_candidates[q]
+                        q -= 1
+                    # except:
+                    #     pass
+                    q += 1
+                    p = len(morn_candidates)
                 morn_count = int(m[1])
-                while morn_count > 0:
-                    random_selection = random.randint(0, (len(morn_candidates) - 1))
-                    morn_addition = morn_candidates.pop(random_selection)
-                    morning_ppl.append([morn_addition, start])
-                    if len(morn_candidates) == 0:
-                        print('Insufficient number of employees available to work on', day, 'morning.')
-                        morn_count = 0         
+                if len(morn_candidates) > morn_count:
+                    do_for = len(morn_candidates) - morn_count
+                    while do_for > 0:
+                        random_selection = random.randint(0, (len(morn_candidates) - 1))
+                        del morn_candidates[random_selection]
+                        do_for -= 1                
+                else:
+                    print('Insufficient number of employees available to work on', day, 'morning.')
+                go_for = len(morn_candidates)
+                start = m[0]
+                while go_for > 0:
+                    morn_addition = morn_candidates[go_for - 1]
+                    people_to_time[morn_addition] = start
+                    morning_ppl.append(morn_addition)
+                    go_for -= 1   
         except:
             pass
 
         try:
-            swing_candidates = openers + morning_ppl
+            swing_candidates = openers[:] + morning_ppl[:]
             for swinger in swing_candidates:
                 if swinger not in availables[day][3]:
-                    swing_candidates.remove(swinger)
+                    del swing_candidates[swinger]
             morn_to_swing_count = int(params[day]['swing_morn_count'])
-            while morn_to_swing_count > 0:
-                random_selection = random.randint(0, (len(swing_candidates) - 1))
-                swing_addition = swing_candidates.pop(random_selection)
-                through_swing.append([swing_addition, params[day]['swing_start']])
-                morn_swingers.append(swing_addition)  
+            if len(swing_candidates) > morn_to_swing_count:
+                do_for = len(swing_candidates) - morn_to_swing_count
+                while do_for > 0:
+                    random_selection = random.randint(0, (len(swing_candidates) - 1))
+                    del swing_candidates[random_selection]
+                    do_for -= 1
+            go_for = len(swing_candidates)
+            while go_for > 0:
+                swing_addition = swing_candidates[go_for - 1]
+                through_swing.append(swing_addition)
+                go_for -= 1
+            morn_swingers[day] = through_swing
         except:
             pass
 
@@ -445,62 +469,102 @@ def Morning_Assignments(params, availables):
             pass
         Formatting_Data_1[day] = dict()
         for person in openers:
-            if person[0] in through_swing:
-                scheduled_output = str(person[1]) + '-' + str(swinger_end)
+            if person in through_swing:
+                scheduled_output = str(people_to_time[person]) + '-' + str(swinger_end)
             else:
-                scheduled_output = str(person[1]) + '-' + str(morn_end)
-            Formatting_Data_1[day][person[0]] = scheduled_output
+                scheduled_output = str(people_to_time[person]) + '-' + str(morn_end)
+            Formatting_Data_1[day][person] = scheduled_output
         for person in morning_ppl:
-            if person[0] in through_swing:
-                scheduled_output = str(person[1]) + '-' + str(swinger_end)
+            if person in through_swing:
+                scheduled_output = str(people_to_time[person]) + '-' + str(swinger_end)
             else:
-                scheduled_output = str(person[1]) + '-' + str(morn_end)
-            Formatting_Data_1[day][person[0]] = scheduled_output
+                scheduled_output = str(people_to_time[person]) + '-' + str(morn_end)
+            Formatting_Data_1[day][person] = scheduled_output
     return(Formatting_Data_1)
 
 
-Formatting_Data_2 = dict()
+
 def Night_Assignments(params, availables):
-    night_ppl = []
-    swing_starters = []
+    Formatting_Data_2 = {
+        'fri':dict(),
+        'sat':dict(),
+        'sun':dict(),
+        'mon':dict(),
+        'tue':dict(),
+        'wed':dict(),
+        'thu':dict()
+        }
+    
     for day in params:
+        night_ppl = []
+        swing_starters = []
+        people_to_time = dict()
         night_candidates = availables[day][4]
+        c = 0
+        while c < len(night_candidates):
+            try:
+                if night_candidates[c] in morn_swingers[day]:
+                    del night_candidates[c]
+                else:
+                    c+=1
+            except:
+                c += 1
         night_count = int(params[day]['night_count'])
-        while (night_count > 0) and (len(night_candidates) > 0):
-            random_selection = (random.randint(0, (len(night_candidates)))) - 1
-            night_addition = night_candidates.pop(random_selection)
+        if len(night_candidates) > night_count:
+            do_for = len(night_candidates) - night_count
+            while do_for > 0:
+                random_selection = random.randint(0, (len(night_candidates) - 1))
+                del night_candidates[random_selection]
+                do_for -= 1
+        else:
+            print('Insufficient number of employees available to work on the afternoon/night of', day)
+        go_for = len(night_candidates)
+        while go_for > 0:
+            night_addition = night_candidates[go_for - 1]
             night_ppl.append(night_addition)
-            night_count -= 1
-            if len(night_ppl) == int(params[day]['night_count']):
-                night_count = -1
-            elif len(night_ppl) == 0:
-                print('Insufficient number of employees available to work on the afternoon/night of', day)
-                night_ppl = 0
+            people_to_time[night_addition] = params[day]['night_start']
+            go_for -= 1
+
         try:
             swing_candidates = night_ppl[:]
             for swinger in swing_candidates:
                 if swinger not in availables[day][3]:
                     swing_candidates.remove(swinger)
-                if swinger in morn_swingers:
+                if swinger in morn_swingers[day]:
                     swing_candidates.remove(swinger)
             swing_to_night_count = int(params[day]['swing_start_count'])
-            while (swing_to_night_count > 0) and (len(swing_candidates) > 0):
-                random_selection = (random.randint(0, (len(swing_candidates)))) - 1
-                swing_addition = swing_candidates.pop(random_selection)
+            if swing_to_night_count < len(swing_candidates):
+                do_for = len(swing_candidates) - swing_to_night_count
+                while do_for > 0:
+                    random_selection = random.randint(0, len(swing_candidates) - 1)
+                    del swing_candidates[random_selection]
+                    do_for -= 1
+            else:
+                print("Insufficient employees to start during the swing shift of", day)
+            go_for = len(swing_candidates)
+            print('go for is equivalent to:', go_for, 'swing candidates?', swing_candidates, params[day]['swing_start'])
+            while go_for > 0:
+                swing_addition = swing_candidates[go_for - 1]
                 swing_starters.append(swing_addition)
-                swing_to_night_count -= 1
-            swing_start_time = params[day]['swing_start']
+                people_to_time[swing_addition] = params[day]['swing_start']
+                go_for -= 1
+                print(swing_starters)
+
+
+
+            # while (swing_to_night_count > 0) and (len(swing_candidates) > 0):
+            #     random_selection = (random.randint(0, (len(swing_candidates)))) - 1
+            #     swing_addition = swing_candidates.pop(random_selection)
+            #     swing_starters.append(swing_addition)
+            #     swing_to_night_count -= 1
+            # swing_start_time = 
         except:
             pass
             
         night_start_time = params[day]['night_start']
 
         for person in night_ppl:
-            if person in swing_starters:
-                scheduled_output = str(swing_start_time)
-            else:
-                scheduled_output = str(night_start_time)
-            Formatting_Data_2[day] = {person: scheduled_output}
+            Formatting_Data_2[day][person] = people_to_time[person]
     return(Formatting_Data_2)
 
 
@@ -547,7 +611,6 @@ def Generate():
         day = 1
         while day <= 7:
             try:
-                print(morning_assigns[dow[day]][v])
                 str_to_write += f'{morning_assigns[dow[day]][v]:^11}' + '|'
             except:
                 str_to_write += ' ' * 11 + '|'
@@ -556,7 +619,6 @@ def Generate():
             except:
                 str_to_write += ' ' * 11 + '||'
             day += 1
-            print('day: ', day, end = ' ')
         formatted_shift_assignments[v] = str_to_write
     strings_to_write = [header]
     for person in victims:
@@ -654,12 +716,12 @@ def Recall_Parameters(position):
             open_ppl = open_data[1]
 
             #morning stuff:
+            morn_info = []
             if len(data[1]) > 11:
                 morn_stuff = data[1].split('-')
                 morn_stripped = morn_stuff[1].strip()
                 morn_split = morn_stripped.split(' ')
                 x = len(morn_split)
-                morn_info = []
                 while x > 1:
                     morn_info.append([morn_split[0], morn_split[1]])
                     del morn_split[1]
@@ -700,6 +762,7 @@ def Recall_Parameters(position):
             }
             try:
                 Parameters[setup[0]]['excess_morn_data'] = morn_info
+                print(Parameters[setup[0]]['excess_morn_data'])
             except:
                 pass
             try: #swing things must be made conditionals
